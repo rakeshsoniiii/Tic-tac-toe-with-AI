@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Tic Tac Toe with Minimax AI</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      text-align: center;
+      margin-top: 50px;
+    }
+    h1 {
+      margin-bottom: 20px;
+    }
+    .board {
+      display: grid;
+      grid-template-columns: repeat(3, 100px);
+      grid-template-rows: repeat(3, 100px);
+      gap: 5px;
+      justify-content: center;
+      margin-bottom: 20px;
+    }
+    .cell {
+      background: #f2f2f2;
+      border: 1px solid #ccc;
+      font-size: 36px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .cell:hover {
+      background: #e0e0e0;
+    }
+
+    /* Animation */
+    .animate {
+      animation: pop 0.3s ease;
+    }
+
+    @keyframes pop {
+      0% { transform: scale(0.2); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    button {
+      padding: 10px 20px;
+      font-size: 16px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Tic Tac Toe vs AI</h1>
+  <div class="board" id="board"></div>
+  <p id="status"></p>
+  <button onclick="startGame()">Restart</button>
+
+  <script>
+    const boardEl = document.getElementById('board');
+    const statusEl = document.getElementById('status');
+
+    let board;
+    const human = 'X';
+    const ai = 'O';
+
+    function startGame() {
+      board = Array(9).fill('');
+      render();
+      statusEl.textContent = "Your turn!";
+    }
+
+    function render(animatedIndex = null) {
+      boardEl.innerHTML = '';
+      board.forEach((val, i) => {
+        const cell = document.createElement('div');
+        cell.classList.add('cell');
+        if (i === animatedIndex) {
+          cell.classList.add('animate');
+        }
+        cell.textContent = val;
+        cell.addEventListener('click', () => handleClick(i));
+        boardEl.appendChild(cell);
+      });
+    }
+
+    function handleClick(index) {
+      if (board[index] !== '' || checkWinner(board)) return;
+
+      board[index] = human;
+      render(index); // animate player move
+
+      if (checkWinner(board)) {
+        statusEl.textContent = "You win!";
+        return;
+      }
+
+      if (board.every(cell => cell !== '')) {
+        statusEl.textContent = "It's a draw!";
+        return;
+      }
+
+      statusEl.textContent = "AI is thinking...";
+      setTimeout(() => {
+        const bestMove = minimax(board, ai).index;
+        board[bestMove] = ai;
+        render(bestMove); // animate AI move
+
+        const winner = checkWinner(board);
+        if (winner) {
+          statusEl.textContent = "AI wins!";
+        } else if (board.every(cell => cell !== '')) {
+          statusEl.textContent = "It's a draw!";
+        } else {
+          statusEl.textContent = "Your turn!";
+        }
+      }, 400);
+    }
+
+    function checkWinner(b) {
+      const wins = [
+        [0,1,2], [3,4,5], [6,7,8],
+        [0,3,6], [1,4,7], [2,5,8],
+        [0,4,8], [2,4,6]
+      ];
+      for (let [a,b1,c] of wins) {
+        if (board[a] && board[a] === board[b1] && board[a] === board[c]) {
+          return board[a];
+        }
+      }
+      return null;
+    }
+
+    function minimax(newBoard, player) {
+      const availSpots = newBoard.map((val, idx) => val === '' ? idx : null).filter(v => v !== null);
+
+      const winner = checkWinner(newBoard);
+      if (winner === human) return { score: -10 };
+      if (winner === ai) return { score: 10 };
+      if (availSpots.length === 0) return { score: 0 };
+
+      const moves = [];
+
+      for (let i = 0; i < availSpots.length; i++) {
+        const move = {};
+        move.index = availSpots[i];
+        newBoard[availSpots[i]] = player;
+
+        if (player === ai) {
+          move.score = minimax(newBoard, human).score;
+        } else {
+          move.score = minimax(newBoard, ai).score;
+        }
+
+        newBoard[availSpots[i]] = '';
+        moves.push(move);
+      }
+
+      let bestMove;
+      if (player === ai) {
+        let bestScore = -Infinity;
+        for (let i = 0; i < moves.length; i++) {
+          if (moves[i].score > bestScore) {
+            bestScore = moves[i].score;
+            bestMove = i;
+          }
+        }
+      } else {
+        let bestScore = Infinity;
+        for (let i = 0; i < moves.length; i++) {
+          if (moves[i].score < bestScore) {
+            bestScore = moves[i].score;
+            bestMove = i;
+          }
+        }
+      }
+
+      return moves[bestMove];
+    }
+
+    startGame();
+  </script>
+</body>
+</html>
